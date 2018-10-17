@@ -164,7 +164,9 @@ class TBSession
     @apiKey = @apiKey.toString()
 #    Fix compatibility with Web JS SDK Session class property
     @id = @sessionId
-    @connections = {}
+#    HACK: support the only OTHelpers.Collection function that Accelerator for actually uses.
+    @connections = length: ->
+      Object.keys(this).length - 1
     @streams = {}
     @subscribers = {}
     @alreadyPublishing = false
