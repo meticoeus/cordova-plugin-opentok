@@ -8,22 +8,21 @@ streamElements = {} # keep track of DOM elements for each stream
 # Helper methods
 #
 getPosition = (pubDiv) ->
-  # Get the position of element
-  if !pubDiv then return {}
-  computedStyle = if window.getComputedStyle then getComputedStyle(pubDiv, null) else {}
-  width = pubDiv.offsetWidth
-  height = pubDiv.offsetHeight
-  curtop = pubDiv.offsetTop
-  curleft = pubDiv.offsetLeft
-  while(pubDiv = pubDiv.offsetParent)
-    curleft += pubDiv.offsetLeft
-    curtop += pubDiv.offsetTop
-  return {
-    top:curtop
-    left:curleft
-    width:width
-    height:height
-  }
+  if !pubDiv
+    return {}
+  boundingRects = if pubDiv.getBoundingClientRect then pubDiv.getBoundingClientRect().toJSON() else null
+  if boundingRects
+# for browsers that do not support width and height
+    if !boundingRects.width
+      boundingRects.width = boundingRects.right - (boundingRects.left)
+    if !boundingRects.height
+      boundingRects.height = boundingRects.bottom - (boundingRects.top)
+  position =
+    width: pubDiv.offsetWidth
+    height: pubDiv.offsetHeight
+    top: pubDiv.offsetTop
+    left: pubDiv.offsetLeft
+  boundingRects or position
 
 replaceWithVideoStream = (element, streamId, properties) ->
   typeClass = if streamId == PublisherStreamId then PublisherTypeClass else SubscriberTypeClass
