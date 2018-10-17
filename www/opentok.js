@@ -735,7 +735,11 @@ TBSession = (function() {
     this.publish = __bind(this.publish, this);
     this.apiKey = this.apiKey.toString();
     this.id = this.sessionId;
-    this.connections = {};
+    this.connections = {
+      length: function() {
+        return Object.keys(this).length - 1;
+      }
+    };
     this.streams = {};
     this.subscribers = {};
     this.alreadyPublishing = false;
