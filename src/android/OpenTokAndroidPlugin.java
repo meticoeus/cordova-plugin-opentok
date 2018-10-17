@@ -675,7 +675,7 @@ public class OpenTokAndroidPlugin extends CordovaPlugin
                 });
                 return true;
             } else {
-                RunnableSubscriber runsub = subscriberCollection.get(args.getString(0));
+                final RunnableSubscriber runsub = subscriberCollection.get(args.getString(0));
                 if (runsub != null) {
                   cordova.getThreadPool().execute(new Runnable() {
                       public void run() {
