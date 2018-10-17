@@ -162,6 +162,8 @@ class TBSession
 
   constructor: (@apiKey, @sessionId) ->
     @apiKey = @apiKey.toString()
+#    Fix compatibility with Web JS SDK Session class property
+    @id = @sessionId
     @connections = {}
     @streams = {}
     @subscribers = {}
