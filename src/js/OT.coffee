@@ -1,3 +1,11 @@
+# TODO: import from npm instead
+
+uuid = ->
+  'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace /[xy]/g, (c) ->
+    r = Math.random() * 16 | 0
+    v = if c == 'x' then r else r & 0x3 | 0x8
+    v.toString 16
+
 # TB Object:
 #   Methods: 
 #     TB.checkSystemRequirements() :number
@@ -13,8 +21,8 @@
 window.OT =
   checkSystemRequirements: ->
     return 1
-  initPublisher: (one, two) ->
-    return new TBPublisher( one, two )
+  initPublisher: (one, two, completionHandler) ->
+    new TBPublisher(one, two, completionHandler)
   initSession: (apiKey, sessionId ) ->
     if( not sessionId? ) then @showError( "OT.initSession takes 2 parameters, your API Key and Session ID" )
     return new TBSession(apiKey, sessionId)

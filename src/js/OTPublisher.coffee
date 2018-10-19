@@ -15,7 +15,7 @@
 #     setStyle( style, value ) : publisher - not yet implemented
 #
 class TBPublisher
-  constructor: (one, two) ->
+  constructor: (one, two, completionHandler) ->
     @sanitizeInputs(one, two)
     pdebug "creating publisher", {}
     position = getPosition(@pubElement)
@@ -32,6 +32,10 @@ class TBPublisher
     frameRate = 30
     resolution = "640X480"
     insertMode = "replace"
+    guid = uuid()
+    @guid = ->
+      guid
+
     if @properties?
       width = @properties.width ? position.width
       height = @properties.height ? position.height
@@ -61,7 +65,26 @@ class TBPublisher
     position = getPosition(@pubElement)
     TBUpdateObjects()
     OT.getHelper().eventing(@)
-    Cordova.exec(TBSuccess, TBError, OTPlugin, "initPublisher", [name, position.top, position.left, width, height, zIndex, publishAudio, publishVideo, cameraName, ratios.widthRatio, ratios.heightRatio, audioFallbackEnabled, audioBitrate, audioSource, videoSource, frameRate, resolution] )
+    handlers = OT.getHelper().makeCompletionHandlers(completionHandler, null)
+    Cordova.exec(handlers.onCompleteSuccess, handlers.onCompleteFailure, OTPlugin, 'initPublisher', [
+      name
+      position.top
+      position.left
+      width
+      height
+      zIndex
+      publishAudio
+      publishVideo
+      cameraName
+      ratios.widthRatio
+      ratios.heightRatio
+      audioFallbackEnabled
+      audioBitrate
+      audioSource
+      videoSource
+      frameRate
+      resolution
+    ])
     Cordova.exec(@eventReceived, TBSuccess, OTPlugin, "addEvent", ["publisherEvents"] )
   setSession: (session) =>
     @session = session

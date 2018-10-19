@@ -1,9 +1,20 @@
+var uuid;
+
+uuid = function() {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    var r, v;
+    r = Math.random() * 16 | 0;
+    v = c === 'x' ? r : r & 0x3 | 0x8;
+    return v.toString(16);
+  });
+};
+
 window.OT = {
   checkSystemRequirements: function() {
     return 1;
   },
-  initPublisher: function(one, two) {
-    return new TBPublisher(one, two);
+  initPublisher: function(one, two, completionHandler) {
+    return new TBPublisher(one, two, completionHandler);
   },
   initSession: function(apiKey, sessionId) {
     if (sessionId == null) {
@@ -322,13 +333,13 @@ var TBPublisher,
   __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
 TBPublisher = (function() {
-  function TBPublisher(one, two) {
+  function TBPublisher(one, two, completionHandler) {
     this.removePublisherElement = __bind(this.removePublisherElement, this);
     this.streamDestroyed = __bind(this.streamDestroyed, this);
     this.streamCreated = __bind(this.streamCreated, this);
     this.eventReceived = __bind(this.eventReceived, this);
     this.setSession = __bind(this.setSession, this);
-    var audioBitrate, audioFallbackEnabled, audioSource, cameraName, frameRate, height, insertMode, name, position, publishAudio, publishVideo, ratios, resolution, videoSource, width, zIndex, _ref, _ref1, _ref10, _ref2, _ref3, _ref4, _ref5, _ref6, _ref7, _ref8, _ref9;
+    var audioBitrate, audioFallbackEnabled, audioSource, cameraName, frameRate, guid, handlers, height, insertMode, name, position, publishAudio, publishVideo, ratios, resolution, videoSource, width, zIndex, _ref, _ref1, _ref10, _ref2, _ref3, _ref4, _ref5, _ref6, _ref7, _ref8, _ref9;
     this.sanitizeInputs(one, two);
     pdebug("creating publisher", {});
     position = getPosition(this.pubElement);
@@ -345,6 +356,10 @@ TBPublisher = (function() {
     frameRate = 30;
     resolution = "640X480";
     insertMode = "replace";
+    guid = uuid();
+    this.guid = function() {
+      return guid;
+    };
     if (this.properties != null) {
       width = (_ref = this.properties.width) != null ? _ref : position.width;
       height = (_ref1 = this.properties.height) != null ? _ref1 : position.height;
@@ -385,7 +400,8 @@ TBPublisher = (function() {
     position = getPosition(this.pubElement);
     TBUpdateObjects();
     OT.getHelper().eventing(this);
-    Cordova.exec(TBSuccess, TBError, OTPlugin, "initPublisher", [name, position.top, position.left, width, height, zIndex, publishAudio, publishVideo, cameraName, ratios.widthRatio, ratios.heightRatio, audioFallbackEnabled, audioBitrate, audioSource, videoSource, frameRate, resolution]);
+    handlers = OT.getHelper().makeCompletionHandlers(completionHandler, null);
+    Cordova.exec(handlers.onCompleteSuccess, handlers.onCompleteFailure, OTPlugin, 'initPublisher', [name, position.top, position.left, width, height, zIndex, publishAudio, publishVideo, cameraName, ratios.widthRatio, ratios.heightRatio, audioFallbackEnabled, audioBitrate, audioSource, videoSource, frameRate, resolution]);
     Cordova.exec(this.eventReceived, TBSuccess, OTPlugin, "addEvent", ["publisherEvents"]);
   }
 
@@ -596,29 +612,43 @@ TBSession = (function() {
     return this;
   };
 
-  TBSession.prototype.publish = function(divObject, properties) {
+  TBSession.prototype.publish = function(publisher, properties, completionHandler) {
+    var handlers, onCompleteFailure;
+    if (typeof publisher === 'function') {
+      completionHandler = publisher;
+      publisher = void 0;
+    }
+    if (typeof properties === 'function') {
+      completionHandler = properties;
+      properties = void 0;
+    }
+    completionHandler = completionHandler || function() {};
+    handlers = OT.getHelper().makeCompletionHandlers(completionHandler, null);
+    onCompleteFailure = function(err) {
+      OTPublisherError(err);
+      handlers.onCompleteFailure(err);
+    };
     if (this.alreadyPublishing) {
-      pdebug("Session is already publishing", {});
+      pdebug('Session is already publishing', {});
       return;
     }
     this.alreadyPublishing = true;
-    this.publisher = new TBPublisher(divObject, properties);
-    return this.publish(this.publisher);
-  };
-
-  TBSession.prototype.publish = function() {
-    if (this.alreadyPublishing) {
-      pdebug("Session is already publishing", {});
-      return;
-    }
-    this.alreadyPublishing = true;
-    if (typeof arguments[0] === "object") {
-      this.publisher = arguments[0];
+    if (!publisher || typeof publisher === 'string' || OT.getHelper().isElementNode(publisher)) {
+      this.publisher = new TBPublisher(publisher, properties);
+    } else if (publisher instanceof TBPublisher) {
+      if ('session' in publisher && publisher.session && 'sessionId' in publisher.session) {
+        if (publisher.session.sessionId === this.sessionId) {
+          OT.getHelper().warn('Cannot publish ' + publisher.guid() + ' again to ' + this.sessionId + '. Please call session.unpublish(publisher) first.');
+        } else {
+          OT.getHelper().warn('Cannot publish ' + publisher.guid() + ' publisher already attached to ' + publisher.session.sessionId + '. Please call session.unpublish(publisher) first.');
+        }
+      }
     } else {
-      this.publisher = OT.initPublisher(arguments);
+      return void 0;
     }
+    this.publisher = publisher;
     this.publisher.setSession(this);
-    Cordova.exec(TBSuccess, OTPublisherError, OTPlugin, "publish", []);
+    Cordova.exec(handlers.onCompleteSuccess, onCompleteFailure, OTPlugin, 'publish', []);
     return this.publisher;
   };
 
@@ -732,7 +762,6 @@ TBSession = (function() {
     this.connectionCreated = __bind(this.connectionCreated, this);
     this.eventReceived = __bind(this.eventReceived, this);
     this.resetElement = __bind(this.resetElement, this);
-    this.publish = __bind(this.publish, this);
     this.publish = __bind(this.publish, this);
     this.apiKey = this.apiKey.toString();
     this.id = this.sessionId;
@@ -1214,6 +1243,37 @@ DefaultHeight = 198;
   var previousOTHelpers = window.OTHelpers;
 
   window.OTHelpers = OTHelpers;
+
+  OTHelpers.makeCompletionHandlers = function makeCompletionHandlers(completionHandler, cleanup) {
+    var onCompleteFailure, onCompleteSuccess;
+    if (completionHandler != null) {
+      onCompleteSuccess = function() {
+        var args, _key2, _len2;
+        _len2 = arguments.length;
+        args = Array(_len2);
+        _key2 = 0;
+        while (_key2 < _len2) {
+          args[_key2] = arguments[_key2];
+          _key2++;
+        }
+        if (cleanup) {
+          cleanup();
+        }
+        completionHandler.apply(void 0, [void 0].concat(args));
+      };
+      onCompleteFailure = function() {
+        if (cleanup) {
+          cleanup();
+        }
+        completionHandler.apply(void 0, arguments);
+      };
+    }
+
+    return {
+      onCompleteSuccess: onCompleteSuccess,
+      onCompleteFailure: onCompleteFailure,
+    }
+  };
 
   OTHelpers.keys = Object.keys || function(object) {
     var keys = [], hasOwnProperty = Object.prototype.hasOwnProperty;

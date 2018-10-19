@@ -36,6 +36,37 @@
 
   window.OTHelpers = OTHelpers;
 
+  OTHelpers.makeCompletionHandlers = function makeCompletionHandlers(completionHandler, cleanup) {
+    var onCompleteFailure, onCompleteSuccess;
+    if (completionHandler != null) {
+      onCompleteSuccess = function() {
+        var args, _key2, _len2;
+        _len2 = arguments.length;
+        args = Array(_len2);
+        _key2 = 0;
+        while (_key2 < _len2) {
+          args[_key2] = arguments[_key2];
+          _key2++;
+        }
+        if (cleanup) {
+          cleanup();
+        }
+        completionHandler.apply(void 0, [void 0].concat(args));
+      };
+      onCompleteFailure = function() {
+        if (cleanup) {
+          cleanup();
+        }
+        completionHandler.apply(void 0, arguments);
+      };
+    }
+
+    return {
+      onCompleteSuccess: onCompleteSuccess,
+      onCompleteFailure: onCompleteFailure,
+    }
+  };
+
   OTHelpers.keys = Object.keys || function(object) {
     var keys = [], hasOwnProperty = Object.prototype.hasOwnProperty;
     for(var key in object) {

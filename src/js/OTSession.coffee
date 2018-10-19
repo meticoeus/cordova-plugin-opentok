@@ -63,24 +63,44 @@ class TBSession
     return @
   getSubscribersForStream: (stream) ->
     return @
-  publish: (divObject, properties) =>
-    if( @alreadyPublishing )
-      pdebug("Session is already publishing", {})
+  publish: (publisher, properties, completionHandler) =>
+    if typeof publisher == 'function'
+      completionHandler = publisher
+      publisher = undefined
+    if typeof properties == 'function'
+      completionHandler = properties
+      properties = undefined
+    completionHandler = completionHandler or ->
+    handlers = OT.getHelper().makeCompletionHandlers(completionHandler, null)
+
+    onCompleteFailure = (err) ->
+      OTPublisherError err
+      handlers.onCompleteFailure err
+      return
+
+    if @alreadyPublishing
+      pdebug 'Session is already publishing', {}
       return
     @alreadyPublishing = true
-    @publisher = new TBPublisher(divObject, properties)
-    @publish( @publisher )
-  publish: () =>
-    if( @alreadyPublishing )
-      pdebug("Session is already publishing", {})
-      return
-    @alreadyPublishing = true
-    if(typeof arguments[0] == "object")
-      @publisher = arguments[0]
+    # If the user has passed in an ID of a element then we create a new publisher.
+    if !publisher or typeof publisher == 'string' or OT.getHelper().isElementNode(publisher)
+# Initiate a new Publisher with the new session credentials
+      @publisher = new TBPublisher(publisher, properties)
+    else if publisher instanceof TBPublisher
+# If the publisher already has a session attached to it we can
+      if 'session' of publisher and publisher.session and 'sessionId' of publisher.session
+# send a warning message that we can't publish again.
+        if publisher.session.sessionId == @sessionId
+          OT.getHelper().warn 'Cannot publish ' + publisher.guid() + ' again to ' + @sessionId + '. Please call session.unpublish(publisher) first.'
+        else
+          OT.getHelper().warn 'Cannot publish ' + publisher.guid() + ' publisher already attached to ' + publisher.session.sessionId + '. Please call session.unpublish(publisher) first.'
     else
-      @publisher = OT.initPublisher(arguments)
-    @publisher.setSession(@)
-    Cordova.exec(TBSuccess, OTPublisherError, OTPlugin, "publish", [] )
+# TODO: convert this from Web SDK appropriately
+# dispatchOTError(otError(errors.INVALID_PARAMETER, new Error('Session.publish :: First parameter passed in is neither a ' + 'string nor an instance of the Publisher'), ExceptionCodes.UNABLE_TO_PUBLISH), completionHandler);
+      return undefined
+    @publisher = publisher
+    @publisher.setSession this
+    Cordova.exec handlers.onCompleteSuccess, onCompleteFailure, OTPlugin, 'publish', []
     return @publisher
   signal: (signal, signalCompletionHandler) ->
     # signal payload: [type, data, connection( separated by spaces )]
