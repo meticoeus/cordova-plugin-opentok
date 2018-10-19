@@ -545,6 +545,7 @@ public class OpenTokAndroidPlugin extends CordovaPlugin
         // TB Methods
         if (action.equals("initPublisher")) {
             myPublisher = new RunnablePublisher(args);
+            callbackContext.success();
         } else if (action.equals("destroyPublisher")) {
             if (myPublisher != null) {
                 myPublisher.destroyPublisher();
@@ -556,7 +557,8 @@ public class OpenTokAndroidPlugin extends CordovaPlugin
             apiKey = args.getString(0);
             sessionId = args.getString(1);
             Log.i(TAG, "created new session with data: " + args.toString());
-            mSession = new Session(this.cordova.getActivity().getApplicationContext(), apiKey, sessionId);
+            mSession = new Session.Builder(this.cordova.getActivity().getApplicationContext(), apiKey, sessionId)
+                    .build();
             mSession.setSessionListener(this);
             mSession.setConnectionListener(this);
             mSession.setReconnectionListener(this);
@@ -601,6 +603,7 @@ public class OpenTokAndroidPlugin extends CordovaPlugin
                 } else {
                     myPublisher.startPublishing();
                     Log.i(TAG, "publisher is publishing");
+                    callbackContext.success();
                 }
             }
         } else if (action.equals("signal")) {
@@ -706,6 +709,7 @@ public class OpenTokAndroidPlugin extends CordovaPlugin
         } else {
             myPublisher.startPublishing();
             Log.i(TAG, "permission granted-publisher is publishing");
+            permissionsCallback.success();
         }
     }
 
@@ -1065,6 +1069,7 @@ public class OpenTokAndroidPlugin extends CordovaPlugin
 
     @Override
     public void onError(PublisherKit arg0, OpentokError arg1) {
+        Log.e(TAG, "onError" + (arg0 == null ? "null" : arg0.getName()) + " " + arg1.getMessage(), arg1.getException());
         // TODO Auto-generated method stub
 
     }
