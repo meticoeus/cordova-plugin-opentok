@@ -124,9 +124,9 @@ class TBPublisher
   publishVideo: (state) ->
     @publishMedia( "publishVideo", state )
     return @
-  setCameraPosition: (cameraPosition) ->
+  cycleVideo: (cameraPosition) ->
     pdebug("setting camera position", cameraPosition: cameraPosition)
-    Cordova.exec(TBSuccess, TBError, OTPlugin, "setCameraPosition", [cameraPosition])
+    Cordova.exec(TBSuccess, TBError, OTPlugin, "cycleVideo", [cameraPosition])
     return @
   setStyle: (style, value ) ->
     return @

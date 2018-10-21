@@ -567,7 +567,7 @@ public class OpenTokAndroidPlugin extends CordovaPlugin
             logOT(null);
 
             // publisher methods
-        } else if (action.equals("setCameraPosition")) {
+        } else if (action.equals("cycleVideo")) {
             myPublisher.mPublisher.cycleCamera();
         } else if (action.equals("publishAudio")) {
             String val = args.getString(0);
