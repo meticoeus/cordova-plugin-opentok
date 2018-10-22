@@ -259,6 +259,15 @@
     }
     [_publisher setPublishVideo:pubVideo];
 }
+- (void)cycleVideo:(CDVInvokedUrlCommand*)command{
+    NSLog(@"iOS Toggling Video camera position");
+
+    if ([_publisher cameraPosition] == AVCaptureDevicePositionFront) {
+        [_publisher setCameraPosition:AVCaptureDevicePositionBack];
+    } else {
+        [_publisher setCameraPosition:AVCaptureDevicePositionFront];
+    }
+}
 - (void)setCameraPosition:(CDVInvokedUrlCommand*)command{
     NSString* publishCameraPosition = [command.arguments objectAtIndex:0];
     NSLog(@"iOS Altering Video camera position, %@", publishCameraPosition);
